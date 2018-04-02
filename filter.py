@@ -79,6 +79,7 @@ def get_student_profile(student):
     interests, other = get_interests(student)
 
     profile['email'] = student['Contact Info-Email']
+    profile['gender'] = student['Your Gender\xa0Identity']
     profile['interests'] = interests
     profile['size'] = get_size_preference(student)
     profile['computer'] = yesno_to_tf(student, 'computer')
@@ -91,10 +92,41 @@ def get_student_profile(student):
     profile['graduation'] = student['Your anticipated graduation date (year)']
     profile['timeline'] = get_timeline(student)
 
+    # short answers
+    passionate = student['What are you passionate about?']
+    goals = student['What are your goals for participating in the Winternship Program? \xa0']
+    learn = student['What do you hope to learn from the Winternship experience?']
+    career = student['What activities and experiences demonstrate your interest in a tech career?']
+    team = student['Tell us what experience you’ve had working on a team and how you would describe yourself as part...']
+    whyme = student['Why should you be picked to participate in the Winternship Program?']
+
+    profile['short_answers'] = [passionate, goals, learn, career, team, whyme]
+
     return profile
+
+def short_answers_ok(answers):
+    for ans in answers:
+        if len(ans) < 10:
+            return False
+    return True
+
+def student_ok(student_profile):
+    return student_profile['Legal'] and \
+        short_answers_ok(student_profile['short_answers']) and \
+        student_profile['gender'] != 'Male'
+
+def separate_bad_students(student_profiles):
+    good, bad = [], []
+    for student_profile in student_profiles:
+        if student_ok(student_profile):
+            good.append(student_profile)
+        else:
+            bad.append(student_profile)
+    return good, bad
 
 if __name__ == '__main__':
     students = read_file('students.csv')
     companies = read_file('companies.csv')
+    print(student_ok(get_student_profile(students[0])))
     # print(get_company_profile(companies[0]))
-    print(get_student_profile(students[0]))
+    # print(get_student_profile(students[0]))
