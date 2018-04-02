@@ -24,7 +24,7 @@ def get_interests(entity):
         other = entity['Other']
     return (interests, other)
 
-def get_timeline(company):
+def get_company_timeline(company):
     timeline = company['What is your Winternship timeline?The Winternship program is two or three weeks during the winter...']
     if timeline == 'We want to participate for three weeks from Jan 8-26':
         return 'Jan 8-26'
@@ -42,9 +42,9 @@ def get_company_profile(company):
     profile = {}
     interests, other = get_interests(company)
     size = company['Size']
-    timeline = get_timeline(company)
+    timeline = get_company_timeline(company)
     number = get_number_of_winterns(company)
-    profile['name'] = company['name']
+    profile['name'] = company['Company Name']
     profile['interests'] = interests
     profile['size'] = size
     profile['timeline'] = timeline
@@ -61,9 +61,9 @@ def get_size_preference(student):
     return pref
 
 def yesno_to_tf(student, field):
-    return (student[field] == 'Yes')
+    return (student[field].lower() == 'yes')
 
-def get_timeline(student):
+def get_student_timeline(student):
     timeline = student['When are you available? ']
     if timeline == 'I am available all three weeks from Jan 8-26':
         return 'Jan 8-26'
@@ -90,7 +90,7 @@ def get_student_profile(student):
     profile['surrounding_metro'] = yesno_to_tf(student, 'travel\xa0')
     profile['class'] = student['Your Class Year']
     profile['graduation'] = student['Your anticipated graduation date (year)']
-    profile['timeline'] = get_timeline(student)
+    profile['timeline'] = get_student_timeline(student)
 
     # short answers
     passionate = student['What are you passionate about?']
@@ -127,6 +127,15 @@ def separate_bad_students(student_profiles):
 if __name__ == '__main__':
     students = read_file('students.csv')
     companies = read_file('companies.csv')
-    print(student_ok(get_student_profile(students[0])))
+
+    student_profiles = [get_student_profile(student) for student in students]
+    good_students, bad_students = separate_bad_students(student_profiles)
+    company_profiles = [get_company_profile(company) for company in companies]
+
+    print (len(student_profiles))
+    print(len(good_students))
+    print(len(bad_students))
+    # print (bad_students)
+    print (len(company_profiles))
     # print(get_company_profile(companies[0]))
     # print(get_student_profile(students[0]))
