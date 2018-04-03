@@ -1,6 +1,14 @@
 import csv
 import os
 
+from enum import Enum
+
+INTERESTS = ['Artificial Intelligence', 'Data Analytics', 'Design/Branding',
+        'eCommerce', 'Ed Tech', 'Fin Tech', 'Fashion Tech', 'Health Tech',
+        'Hardware', 'Human Resources', 'Internet of Things', 'Law', 'Mobile',
+        'Media', 'Security and Privacy', 'Social Entrepreneurship', 'Social Media',
+        'Software Development', 'Virtual Reality']
+
 def read_file(filename):
     contents = []
     with open(filename, 'r') as csvfile:
@@ -10,11 +18,7 @@ def read_file(filename):
     return contents
 
 def get_interests(entity):
-    keys = ['Artificial Intelligence', 'Data Analytics', 'Design/Branding',
-        'eCommerce', 'Ed Tech', 'Fin Tech', 'Fashion Tech', 'Health Tech',
-        'Hardware', 'Human Resources', 'Internet of Things', 'Law', 'Mobile',
-        'Media', 'Security and Privacy', 'Social Entrepreneurship', 'Social Media',
-        'Software Development', 'Virtual Reality']
+    keys = INTERESTS
 
     interests, other = [], None
     for key in keys:
@@ -44,16 +48,20 @@ def get_company_profile(company):
     size = company['Size']
     timeline = get_company_timeline(company)
     number = get_number_of_winterns(company)
+
     profile['name'] = company['Company Name']
     profile['interests'] = interests
     profile['size'] = size
     profile['timeline'] = timeline
     profile['number'] = number
+    profile['location'] = company['Primary Company Location']
+    
+    return profile
+    # return profile['name'], profile
 
-    return profile['name'], profile
-
-# TODO: how to handle this? just solve for the future ?
-# def get_company_location(company)
+# TODO: how to handle this? rly complicated for now
+def get_grad_year(student):
+    return student['Your anticipated graduation date (year)']
 
 def get_size_preference(student):
     pref = student['Do you have a preference for working in a small, medium, or large sized company? And why?']
@@ -77,19 +85,20 @@ def get_student_timeline(student):
 def get_student_profile(student):
     profile = {}
     interests, other = get_interests(student)
+    size = get_size_preference(student)
 
     profile['email'] = student['Contact Info-Email']
     profile['gender'] = student['Your Gender\xa0Identity']
     profile['interests'] = interests
-    profile['size'] = get_size_preference(student)
+    profile['size'] = size
     profile['computer'] = yesno_to_tf(student, 'computer')
     profile['Macaulay'] = yesno_to_tf(student, 'Macaulay')
     profile['Guild'] = yesno_to_tf(student,'Guild')
     profile['Legal'] = yesno_to_tf(student, 'Legal')
     profile['school'] = student['Your CUNY School']
-    profile['surrounding_metro'] = yesno_to_tf(student, 'travel\xa0')
+    profile['travel'] = yesno_to_tf(student, 'travel\xa0')
     profile['class'] = student['Your Class Year']
-    profile['graduation'] = student['Your anticipated graduation date (year)']
+    profile['graduation'] = get_grad_year(student)
     profile['timeline'] = get_student_timeline(student)
 
     # short answers
@@ -104,6 +113,34 @@ def get_student_profile(student):
 
     return profile
 
+class Match(Enum):
+    BEST = 1
+    GOOD = 2
+    OK = 3
+    NO = 4
+    ANY = 5
+
+def interests_match(student_interests, company_interests):
+    if student_interests == INTERESTS:
+        return Match.ANY
+    elif student_interests == company_interests:
+        return Match.BEST # they're interested in exactly the same stuff
+    elif company_interests and set(company_interests).issubset(student_interests):
+        return Match.GOOD # student is interested in all of company's interests
+    elif bool(set(company_interests) ^ set(student_interests)):
+        return Match.NO # they have no interests in common
+    else:
+        return Match.OK # there is some overlap
+
+
+def student_company_match(student_p, company_p):
+    location_match = student_p['travel'] or (company_p['location'] == 'NYC')
+    schedule_match = (student_p['timeline'] == company_p['timeline'])
+    if location_match and schedule_match:
+        return interests_match(student_p['interests'], company_p['interests'])
+    else:
+        return Match.NO
+
 def short_answers_ok(answers):
     for ans in answers:
         if len(ans) < 10:
@@ -115,6 +152,7 @@ def student_ok(student_profile):
         short_answers_ok(student_profile['short_answers']) and \
         student_profile['gender'] != 'Male'
 
+# TODO: add a reason to bad students...
 def separate_bad_students(student_profiles):
     good, bad = [], []
     for student_profile in student_profiles:
@@ -135,7 +173,12 @@ if __name__ == '__main__':
     print (len(student_profiles))
     print(len(good_students))
     print(len(bad_students))
-    # print (bad_students)
     print (len(company_profiles))
+    # for company_profile in company_profiles:
+    for student_profile in student_profiles:
+        print(student_profile['email'])
+        match = student_company_match(student_profile, company_profiles[0])
+        print (match.name)
     # print(get_company_profile(companies[0]))
+    # print()
     # print(get_student_profile(students[0]))
