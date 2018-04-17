@@ -1,5 +1,6 @@
 import csv
 import os
+import pdb
 
 from enum import Enum
 
@@ -127,7 +128,7 @@ def interests_match(student_interests, company_interests):
         return Match.BEST # they're interested in exactly the same stuff
     elif company_interests and set(company_interests).issubset(student_interests):
         return Match.GOOD # student is interested in all of company's interests
-    elif bool(set(company_interests) ^ set(student_interests)):
+    elif [val for val in company_interests if val in student_interests]:
         return Match.NO # they have no interests in common
     else:
         return Match.OK # there is some overlap
@@ -166,6 +167,8 @@ if __name__ == '__main__':
     students = read_file('students.csv')
     companies = read_file('companies.csv')
 
+    s_data = {student['Contact Info-Email']: student for student in students}
+
     student_profiles = [get_student_profile(student) for student in students]
     good_students, bad_students = separate_bad_students(student_profiles)
     company_profiles = [get_company_profile(company) for company in companies]
@@ -174,11 +177,25 @@ if __name__ == '__main__':
     print(len(good_students))
     print(len(bad_students))
     print (len(company_profiles))
-    # for company_profile in company_profiles:
-    for student_profile in student_profiles:
-        print(student_profile['email'])
-        match = student_company_match(student_profile, company_profiles[0])
-        print (match.name)
+    for student_profile in good_students:
+        for company_profile in company_profiles:
+            email = student_profile['email']
+            # print (email)
+            match = student_company_match(student_profile, company_profile)
+            s_data[email][company_profile['name']] = match.name
+
+    # TODO: get this data more consistently
+    headers = list(s_data['Juaritzel.11@gmail.com'].keys())
+    with open('matches.csv', 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, headers)
+        writer.writeheader()
+        for student in good_students:
+            email = student['email']
+            print(email)
+            writer.writerow(s_data[email])
+    
+            # print(list(s_data[email].keys()))
+
     # print(get_company_profile(companies[0]))
     # print()
     # print(get_student_profile(students[0]))
