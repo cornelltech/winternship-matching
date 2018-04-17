@@ -21,13 +21,11 @@ def read_file(filename):
 def get_interests(entity):
     keys = INTERESTS
 
-    interests, other = [], None
+    interests = []
     for key in keys:
         if entity[key] == key:
             interests.append(entity[key])
-    if entity['Other']:
-        other = entity['Other']
-    return (interests, other)
+    return interests
 
 def get_company_timeline(company):
     timeline = company['What is your Winternship timeline?The Winternship program is two or three weeks during the winter...']
@@ -45,7 +43,7 @@ def get_number_of_winterns(company):
 
 def get_company_profile(company):
     profile = {}
-    interests, other = get_interests(company)
+    interests = get_interests(company)
     size = company['Size']
     timeline = get_company_timeline(company)
     number = get_number_of_winterns(company)
@@ -62,18 +60,13 @@ def get_company_profile(company):
 
 # TODO: how to handle this? rly complicated for now
 def get_grad_year(student):
-    return student['Your anticipated graduation date (year)']
-
-def get_size_preference(student):
-    pref = student['Do you have a preference for working in a small, medium, or large sized company? And why?']
-    # TODO: search thru for coherent size preferences somehow
-    return pref
+    return student['Graduation']
 
 def yesno_to_tf(student, field):
     return (student[field].lower() == 'yes')
 
 def get_student_timeline(student):
-    timeline = student['When are you available? ']
+    timeline = student['When']
     if timeline == 'I am available all three weeks from Jan 8-26':
         return 'Jan 8-26'
     elif timeline == 'I am available the first two weeks from Jan 8-19':
@@ -85,32 +78,33 @@ def get_student_timeline(student):
 
 def get_student_profile(student):
     profile = {}
-    interests, other = get_interests(student)
-    size = get_size_preference(student)
+    interests = get_interests(student)
 
-    profile['email'] = student['Contact Info-Email']
-    profile['gender'] = student['Your Gender\xa0Identity']
+    profile['email'] = student['Email']
+    profile['gender'] = student['Gender']
     profile['interests'] = interests
-    profile['size'] = size
-    profile['computer'] = yesno_to_tf(student, 'computer')
+    profile['size'] = student['Size']
+    profile['computer'] = yesno_to_tf(student, 'Computer')
     profile['Macaulay'] = yesno_to_tf(student, 'Macaulay')
     profile['Guild'] = yesno_to_tf(student,'Guild')
     profile['Legal'] = yesno_to_tf(student, 'Legal')
-    profile['school'] = student['Your CUNY School']
-    profile['travel'] = yesno_to_tf(student, 'travel\xa0')
-    profile['class'] = student['Your Class Year']
+    profile['school'] = student['CUNY']
+    profile['travel'] = yesno_to_tf(student, 'Travel')
+    profile['class'] = student['Class']
     profile['graduation'] = get_grad_year(student)
     profile['timeline'] = get_student_timeline(student)
+    profile['commitment'] = student['Commitment']
 
     # short answers
-    passionate = student['What are you passionate about?']
-    goals = student['What are your goals for participating in the Winternship Program? \xa0']
-    learn = student['What do you hope to learn from the Winternship experience?']
-    career = student['What activities and experiences demonstrate your interest in a tech career?']
-    team = student['Tell us what experience you’ve had working on a team and how you would describe yourself as part...']
-    whyme = student['Why should you be picked to participate in the Winternship Program?']
+    passionate = student['Passionate']
+    goals = student['Goals']
+    learn = student['Hope to learn']
+    career = student['Interest in a tech career']
+    team = student['Team experiences']
+    whyme = student['Why you']
+    list_interests = student['Interests']
 
-    profile['short_answers'] = [passionate, goals, learn, career, team, whyme]
+    profile['short_answers'] = [passionate, goals, learn, career, team, whyme, list_interests]
 
     return profile
 
@@ -148,10 +142,15 @@ def short_answers_ok(answers):
             return False
     return True
 
+def student_commitment(level):
+    return level == 'Committed' or \
+        level == 'Very Committed'
+
 def student_ok(student_profile):
     return student_profile['Legal'] and \
         short_answers_ok(student_profile['short_answers']) and \
-        student_profile['gender'] != 'Male'
+        student_profile['gender'] != 'Male' and \
+        student_commitment(student_profile['commitment'])
 
 # TODO: add a reason to bad students...
 def separate_bad_students(student_profiles):
@@ -164,10 +163,10 @@ def separate_bad_students(student_profiles):
     return good, bad
 
 if __name__ == '__main__':
-    students = read_file('students.csv')
+    students = read_file('students2.csv')
     companies = read_file('companies.csv')
 
-    s_data = {student['Contact Info-Email']: student for student in students}
+    s_data = {student['Email']: student for student in students}
 
     student_profiles = [get_student_profile(student) for student in students]
     good_students, bad_students = separate_bad_students(student_profiles)
@@ -191,7 +190,7 @@ if __name__ == '__main__':
         writer.writeheader()
         for student in good_students:
             email = student['email']
-            print(email)
+            # print(email)
             writer.writerow(s_data[email])
     
             # print(list(s_data[email].keys()))
