@@ -191,11 +191,15 @@ if __name__ == '__main__':
     print (len(company_profiles))
     for student_profile in good_students:
         email = student_profile['email']
-        s_data[email]['CS Level'] = get_student_level(student_profile)
+        s_data[email]['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
             # print (email)
             match = student_company_match(student_profile, company_profile)
             s_data[email][company_profile['name']] = match.name
+        # remove some stuff that you don't need
+        extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
+        for key in extra_keys:
+            s_data[email].popitem(key)
 
     # TODO: get this data more consistently
     headers = list(s_data['Juaritzel.11@gmail.com'].keys())
