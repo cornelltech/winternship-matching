@@ -120,7 +120,6 @@ def get_student_profile(student):
     list_interests = student['Interests']
 
     profile['short_answers'] = [passionate, goals, learn, career, team, whyme, list_interests]
-    profile['level'] = get_student_level(profile)
 
     return profile
 
@@ -191,8 +190,9 @@ if __name__ == '__main__':
     print(len(bad_students))
     print (len(company_profiles))
     for student_profile in good_students:
+        email = student_profile['email']
+        s_data[email]['CS Level'] = get_student_level(student_profile)
         for company_profile in company_profiles:
-            email = student_profile['email']
             # print (email)
             match = student_company_match(student_profile, company_profile)
             s_data[email][company_profile['name']] = match.name
