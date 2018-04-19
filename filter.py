@@ -76,6 +76,19 @@ def get_student_timeline(student):
     else:
         return timeline
 
+class Level(Enum):
+    INTRO = 1
+    INTERMEDIATE = 2
+    ADVANCED = 3
+
+def get_student_level(student):
+    if not student['cs']:
+        return Level.INTRO
+    elif student['class'] != 'Freshman' and student['major'] == 'Computer Science':
+        return Level.ADVANCED
+    else:
+        return Level.INTERMEDIATE
+
 def get_student_profile(student):
     profile = {}
     interests = get_interests(student)
@@ -91,9 +104,11 @@ def get_student_profile(student):
     profile['school'] = student['CUNY']
     profile['travel'] = yesno_to_tf(student, 'Travel')
     profile['class'] = student['Class']
+    profile['major'] = student['Major']
     profile['graduation'] = get_grad_year(student)
     profile['timeline'] = get_student_timeline(student)
     profile['commitment'] = student['Commitment']
+    profile['cs'] = yesno_to_tf(student, 'CS Class')
 
     # short answers
     passionate = student['Passionate']
@@ -105,6 +120,7 @@ def get_student_profile(student):
     list_interests = student['Interests']
 
     profile['short_answers'] = [passionate, goals, learn, career, team, whyme, list_interests]
+    profile['level'] = get_student_level(profile)
 
     return profile
 
@@ -116,9 +132,7 @@ class Match(Enum):
     ANY = 5
 
 def interests_match(student_interests, company_interests):
-    if student_interests == INTERESTS:
-        return Match.ANY
-    elif student_interests == company_interests:
+    if student_interests == company_interests:
         return Match.BEST # they're interested in exactly the same stuff
     elif company_interests and set(company_interests).issubset(student_interests):
         return Match.GOOD # student is interested in all of company's interests
@@ -163,7 +177,7 @@ def separate_bad_students(student_profiles):
     return good, bad
 
 if __name__ == '__main__':
-    students = read_file('students2.csv')
+    students = read_file('students.csv')
     companies = read_file('companies.csv')
 
     s_data = {student['Email']: student for student in students}
