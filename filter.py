@@ -123,31 +123,36 @@ def get_student_profile(student):
 
     return profile
 
-class Match(Enum):
-    BEST = 1
-    GOOD = 2
-    OK = 3
-    NO = 4
-    ANY = 5
+# class Match(Enum):
+#     a_BEST = 1
+#     b_GOOD = 2
+#     c_OK = 3
+#     d_NO = 4
 
 def interests_match(student_interests, company_interests):
-    if student_interests == company_interests:
-        return Match.BEST # they're interested in exactly the same stuff
-    elif company_interests and set(company_interests).issubset(student_interests):
-        return Match.GOOD # student is interested in all of company's interests
-    elif [val for val in company_interests if val in student_interests]:
-        return Match.NO # they have no interests in common
-    else:
-        return Match.OK # there is some overlap
+    total = 0
+    for interest in company_interests:
+        if interest in student_interests:
+            total += 1
+    return total
+    # if student_interests == company_interests:
+    #     return Match.a_BEST # they're interested in exactly the same stuff
+    # elif company_interests and set(company_interests).issubset(student_interests):
+    #     return Match.b_GOOD # student is interested in all of company's interests
+    # elif [val for val in company_interests if val in student_interests]:
+    #     return Match.d_NO # they have no interests in common
+    # else:
+    #     return Match.c_OK # there is some overlap
 
 
 def student_company_match(student_p, company_p):
     location_match = student_p['travel'] or (company_p['location'] == 'NYC')
     schedule_match = (student_p['timeline'] == company_p['timeline'])
+    size_match = (student_p['size'].lower() == company_p['size'].lower())
     if location_match and schedule_match:
-        return interests_match(student_p['interests'], company_p['interests'])
+        return interests_match(student_p['interests'], company_p['interests']) + size_match
     else:
-        return Match.NO
+        return 0
 
 def short_answers_ok(answers):
     for ans in answers:
@@ -175,6 +180,19 @@ def separate_bad_students(student_profiles):
             bad.append(student_profile)
     return good, bad
 
+def assess_results(student_outcomes, good_students, company_profiles):
+    for company in company_profiles:
+        results = {}
+        for s in good_students:
+            student = student_outcomes[s['email']]
+            match = student[company['name']]
+            if match in results:
+                results[match] += 1
+            else:
+                results[match] = 0
+        print(company['name'])
+        print(results)
+
 if __name__ == '__main__':
     students = read_file('students.csv')
     companies = read_file('companies.csv')
@@ -193,14 +211,13 @@ if __name__ == '__main__':
         email = student_profile['email']
         s_data[email]['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
-            # print (email)
             match = student_company_match(student_profile, company_profile)
-            s_data[email][company_profile['name']] = match.name
+            s_data[email][company_profile['name']] = match
         # remove some stuff that you don't need
         extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
         for key in extra_keys:
             s_data[email].popitem(key)
-
+    
     # TODO: get this data more consistently
     headers = list(s_data['Juaritzel.11@gmail.com'].keys())
     with open('matches.csv', 'w', newline='') as csvfile:
@@ -208,10 +225,10 @@ if __name__ == '__main__':
         writer.writeheader()
         for student in good_students:
             email = student['email']
-            # print(email)
             writer.writerow(s_data[email])
     
             # print(list(s_data[email].keys()))
+    assess_results(s_data, good_students, company_profiles)
 
     # print(get_company_profile(companies[0]))
     # print()
