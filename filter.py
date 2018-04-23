@@ -216,7 +216,8 @@ if __name__ == '__main__':
         # remove some stuff that you don't need
         extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
         for key in extra_keys:
-            s_data[email].popitem(key)
+            del s_data[email][key]
+
     
     # TODO: get this data more consistently
     headers = list(s_data['Juaritzel.11@gmail.com'].keys())
