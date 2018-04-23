@@ -1,4 +1,5 @@
 import csv
+import operator
 import os
 import pdb
 
@@ -180,7 +181,14 @@ def separate_bad_students(student_profiles):
             bad.append(student_profile)
     return good, bad
 
+def get_score(results):
+    total = 0
+    for k in results.keys():
+        total += (k * results[k])
+    return total
+
 def assess_results(student_outcomes, good_students, company_profiles):
+    score = {}
     for company in company_profiles:
         results = {}
         for s in good_students:
@@ -190,8 +198,12 @@ def assess_results(student_outcomes, good_students, company_profiles):
                 results[match] += 1
             else:
                 results[match] = 0
-        print(company['name'])
-        print(results)
+        # print(company['name'])
+        # print(results)
+        score[company['name']] = get_score(results)
+        # print (score[company['name']])
+    return score
+
 
 if __name__ == '__main__':
     students = read_file('students.csv')
@@ -207,6 +219,13 @@ if __name__ == '__main__':
     print(len(good_students))
     print(len(bad_students))
     print (len(company_profiles))
+
+    # create baseline list of headers
+    h0 = list(students[0].keys()) + ['CS Level']
+    extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
+    for key in extra_keys:
+        h0.remove(key)
+
     for student_profile in good_students:
         email = student_profile['email']
         s_data[email]['CS Level'] = get_student_level(student_profile).name
@@ -214,23 +233,16 @@ if __name__ == '__main__':
             match = student_company_match(student_profile, company_profile)
             s_data[email][company_profile['name']] = match
         # remove some stuff that you don't need
-        extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
         for key in extra_keys:
             del s_data[email][key]
 
-    
-    # TODO: get this data more consistently
-    headers = list(s_data['Juaritzel.11@gmail.com'].keys())
+    scores = assess_results(s_data, good_students, company_profiles)
+    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
+    companies_ordered_by_matches = [x for (x,y) in sorted_scores]
+    headers = h0 + companies_ordered_by_matches
     with open('matches.csv', 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
         for student in good_students:
             email = student['email']
             writer.writerow(s_data[email])
-    
-            # print(list(s_data[email].keys()))
-    assess_results(s_data, good_students, company_profiles)
-
-    # print(get_company_profile(companies[0]))
-    # print()
-    # print(get_student_profile(students[0]))
