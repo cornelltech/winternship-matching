@@ -124,11 +124,6 @@ def get_student_profile(student):
 
     return profile
 
-# class Match(Enum):
-#     a_BEST = 1
-#     b_GOOD = 2
-#     c_OK = 3
-#     d_NO = 4
 
 def interests_match(student_interests, company_interests):
     total = 0
@@ -136,24 +131,16 @@ def interests_match(student_interests, company_interests):
         if interest in student_interests:
             total += 1
     return total
-    # if student_interests == company_interests:
-    #     return Match.a_BEST # they're interested in exactly the same stuff
-    # elif company_interests and set(company_interests).issubset(student_interests):
-    #     return Match.b_GOOD # student is interested in all of company's interests
-    # elif [val for val in company_interests if val in student_interests]:
-    #     return Match.d_NO # they have no interests in common
-    # else:
-    #     return Match.c_OK # there is some overlap
-
 
 def student_company_match(student_p, company_p):
     location_match = student_p['travel'] or (company_p['location'] == 'NYC')
     schedule_match = (student_p['timeline'] == company_p['timeline'])
     size_match = (student_p['size'].lower() == company_p['size'].lower())
     if location_match and schedule_match:
-        return interests_match(student_p['interests'], company_p['interests']) + size_match
+        student_commitment = student_p['commitment'] == 'Very Committed'
+        return interests_match(student_p['interests'], company_p['interests']) + size_match + student_commitment
     else:
-        return 0
+        return -1
 
 def short_answers_ok(answers):
     for ans in answers:
