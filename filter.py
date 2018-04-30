@@ -174,21 +174,17 @@ def get_score(results):
         total += (k * results[k])
     return total
 
-def assess_results(student_outcomes, good_students, company_profiles):
+def assess_results(students, company_profiles):
     score = {}
     for company in company_profiles:
         results = {}
-        for s in good_students:
-            student = student_outcomes[s['email']]
+        for student in students:
             match = student[company['name']]
             if match in results:
                 results[match] += 1
             else:
                 results[match] = 0
-        # print(company['name'])
-        # print(results)
         score[company['name']] = get_score(results)
-        # print (score[company['name']])
     return score
 
 def get_requirements():
@@ -239,7 +235,7 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                         all_matches.append(student)
 
 
-                    print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
+                    # print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
                     remaining_reqs.remove(req)
         # print(len(matches))
         matched_students[company] = matches
@@ -247,9 +243,10 @@ def build_teams(requirements, companies_ordered_by_matches, students):
     for company in matched_students:
         if len(matched_students[company]) < 5:
             print(company, 'has only', len(matched_students[company]), 'students matched')
-    print(matched_students['AppNexus'])
     return all_matches + students
 
+# def write_out_students(student_profiles, headers):
+    
 
 if __name__ == '__main__':
     students = read_file('students.csv')
@@ -275,21 +272,32 @@ if __name__ == '__main__':
     for student_profile in good_students:
         email = student_profile['email']
         student_profile['CS Level'] = get_student_level(student_profile).name
-        s_data[email]['CS Level'] = get_student_level(student_profile).name
+        # s_data[email]['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
-            s_data[email][company_profile['name']] = match
+            # s_data[email][company_profile['name']] = match
             student_profile[company_profile['name']] = match
-        # remove some stuff that you don't need
-        for key in extra_keys:
-            del s_data[email][key]
 
-    scores = assess_results(s_data, good_students, company_profiles)
+    scores = assess_results(good_students, company_profiles)
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
     companies_ordered_by_matches = [x for (x,y) in sorted_scores]
 
     requirements = get_requirements()
     students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
+
+    for student_profile in students_final:
+        email = student_profile['email']
+        s_dict = s_data[email]
+        s_dict['CS Level'] = student_profile['CS Level']
+
+        # remove some stuff that you don't need
+        for key in extra_keys:
+            del s_dict[key]
+        
+        # update the company scores
+        for company_profile in company_profiles:
+            company = company_profile['name']
+            s_dict[company] = student_profile[company]
 
     headers = h0 + companies_ordered_by_matches
     with open('matches.csv', 'w', newline='') as csvfile:
