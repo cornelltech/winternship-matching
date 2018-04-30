@@ -102,7 +102,7 @@ def get_student_profile(student):
     profile['Macaulay'] = yesno_to_tf(student, 'Macaulay')
     profile['Guild'] = yesno_to_tf(student,'Guild')
     profile['Legal'] = yesno_to_tf(student, 'Legal')
-    profile['school'] = student['CUNY']
+    profile['cuny'] = student['CUNY']
     profile['travel'] = yesno_to_tf(student, 'Travel')
     profile['class'] = student['Class']
     profile['major'] = student['Major']
@@ -191,6 +191,65 @@ def assess_results(student_outcomes, good_students, company_profiles):
         # print (score[company['name']])
     return score
 
+def get_requirements():
+    requirements = {}
+    requirements['sophomore'] = lambda s: (s['class'] != 'Freshman')
+    requirements['advanced'] = lambda s: (s['CS Level'] == 'ADVANCED')
+    requirements['intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
+    # this is probably a bad idea bc it eats some students
+    # requirements['2nd intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
+    requirements['sg'] = lambda s: (s['Guild'])
+    requirements['honors'] = lambda s: (s['Macaulay'])
+    requirements['different school'] = lambda s: (s['cuny'] != 'Baruch College' and s['cuny'] != 'Hunter College')
+    requirements['non-CS freshman'] = lambda s: (s['class'] == 'Freshman' and \
+                                                s['major'] != 'Computer Science' and \
+                                                s['major'] != 'CS')
+    return requirements
+
+def build_teams(requirements, companies_ordered_by_matches, students):
+    matched_students = {}
+    all_matches = []
+    for company in companies_ordered_by_matches:
+        remaining_reqs = list(requirements)
+        # sort list of students by company column, from highest score to lowest
+        list.sort(students, key=(lambda s: s[company]), reverse=True)
+        matches = []
+        for student in students:
+            # once we're into students who don't match on location, there won't be any more good matches
+            if student[company] == -1:
+                break
+            
+            # or we might have reached the max team size
+            if len(matches) == 5:
+                break
+
+            for req in remaining_reqs:
+                if(requirements[req](student)):
+                    # if this is the first requirement they matched on:
+                    if student not in matches:
+
+                        # change their match score
+                        student[company] = 'A' + str(student[company])
+
+                        # remove them from the blank students list
+                        students.remove(student)
+
+                         # add them to the company list
+                        matches.append(student)
+                        all_matches.append(student)
+
+
+                    print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
+                    remaining_reqs.remove(req)
+        # print(len(matches))
+        matched_students[company] = matches
+    print("students who didn't match:", len(students))
+    for company in matched_students:
+        if len(matched_students[company]) < 5:
+            print(company, 'has only', len(matched_students[company]), 'students matched')
+    print(matched_students['AppNexus'])
+    return all_matches + students
+
 
 if __name__ == '__main__':
     students = read_file('students.csv')
@@ -215,10 +274,12 @@ if __name__ == '__main__':
 
     for student_profile in good_students:
         email = student_profile['email']
+        student_profile['CS Level'] = get_student_level(student_profile).name
         s_data[email]['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
             s_data[email][company_profile['name']] = match
+            student_profile[company_profile['name']] = match
         # remove some stuff that you don't need
         for key in extra_keys:
             del s_data[email][key]
@@ -226,10 +287,14 @@ if __name__ == '__main__':
     scores = assess_results(s_data, good_students, company_profiles)
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
     companies_ordered_by_matches = [x for (x,y) in sorted_scores]
+
+    requirements = get_requirements()
+    students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
+
     headers = h0 + companies_ordered_by_matches
     with open('matches.csv', 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
-        for student in good_students:
+        for student in students_final:
             email = student['email']
             writer.writerow(s_data[email])
