@@ -134,7 +134,8 @@ def interests_match(student_interests, company_interests):
 
 def student_company_match(student_p, company_p):
     location_match = student_p['travel'] or (company_p['location'] == 'NYC')
-    schedule_match = (student_p['timeline'] == company_p['timeline'])
+    schedule_match = True
+    # schedule_match = (student_p['timeline'] == company_p['timeline'])
     size_match = (student_p['size'].lower() == company_p['size'].lower())
     if location_match and schedule_match:
         student_commitment = student_p['commitment'] == 'Very Committed'
@@ -174,6 +175,14 @@ def get_score(results):
         total += (k * results[k])
     return total
 
+
+def get_number_of_compatible_students(results):
+    total = 0
+    for k in results.keys():
+        if k != -1:
+            total += results[k]
+    return total
+
 def assess_results(students, company_profiles):
     score = {}
     for company in company_profiles:
@@ -185,6 +194,7 @@ def assess_results(students, company_profiles):
             else:
                 results[match] = 0
         score[company] = get_score(results)
+        # score[company] = get_number_of_compatible_students(results)
     return score
 
 def get_requirements():
@@ -193,7 +203,7 @@ def get_requirements():
     requirements['advanced'] = lambda s: (s['CS Level'] == 'ADVANCED')
     requirements['intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
     # this is probably a bad idea bc it eats some students
-    # requirements['2nd intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
+    requirements['2nd intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
     requirements['sg'] = lambda s: (s['Guild'])
     requirements['honors'] = lambda s: (s['Macaulay'])
     requirements['different school'] = lambda s: (s['cuny'] != 'Baruch College' and s['cuny'] != 'Hunter College')
@@ -225,7 +235,7 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                     if student not in matches:
 
                         # change their match score
-                        student[company] = 'A' + str(student[company])
+                        student[company] = 'M' + str(student[company])
 
                         # remove them from the blank students list
                         students.remove(student)
@@ -237,7 +247,7 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                         # change their status for all other companies...
                         for c2 in companies_ordered_by_matches:
                             if c2 != company:
-                                student[c2] = 'X' + str(student[c2])
+                                student[c2] = 'A' + str(student[c2])
 
 
                     # print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
@@ -246,23 +256,23 @@ def build_teams(requirements, companies_ordered_by_matches, students):
 
     # do a second pass to fill in the gaps
     reordered_companies = order_companies_by_student_scores(students, companies_ordered_by_matches)
+
     for company in reordered_companies:
         matches = matched_students[company]
         list.sort(students, key=(lambda s: s[company]), reverse=True)
         while len(matches) < 5:
-#             # pdb.set_trace()
-
+            student = students.pop(0)
             # you can't assign an unacceptable match
             if student[company] == -1:
                 break
-            student = students.pop(0)
-            student[company] = 'A' + str(student[company])
+
+            student[company] = 'M' + str(student[company])
             matches.append(student)
             all_matches.append(student)
 
             for c2 in companies_ordered_by_matches:
                 if c2 != company:
-                    student[c2] = 'X' + str(student[c2])
+                    student[c2] = 'B' + str(student[c2])
 
     print("students who didn't match:", len(students))
     for company in matched_students:
@@ -302,18 +312,12 @@ if __name__ == '__main__':
     for student_profile in good_students:
         email = student_profile['email']
         student_profile['CS Level'] = get_student_level(student_profile).name
-        # s_data[email]['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
-            # s_data[email][company_profile['name']] = match
             student_profile[company_profile['name']] = match
         
-    # pdb.set_trace()
 
     companies_ordered_by_matches = order_companies_by_student_scores(good_students, [c['name'] for c in company_profiles])
-    # scores = assess_results(good_students, company_profiles)
-    # sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
-    # companies_ordered_by_matches = [x for (x,y) in sorted_scores]
 
     requirements = get_requirements()
     students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
