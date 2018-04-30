@@ -179,12 +179,12 @@ def assess_results(students, company_profiles):
     for company in company_profiles:
         results = {}
         for student in students:
-            match = student[company['name']]
+            match = student[company]
             if match in results:
                 results[match] += 1
             else:
                 results[match] = 0
-        score[company['name']] = get_score(results)
+        score[company] = get_score(results)
     return score
 
 def get_requirements():
@@ -234,11 +234,36 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                         matches.append(student)
                         all_matches.append(student)
 
+                        # change their status for all other companies...
+                        for c2 in companies_ordered_by_matches:
+                            if c2 != company:
+                                student[c2] = 'X' + str(student[c2])
+
 
                     # print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
                     remaining_reqs.remove(req)
-        # print(len(matches))
         matched_students[company] = matches
+
+    # do a second pass to fill in the gaps
+    reordered_companies = order_companies_by_student_scores(students, companies_ordered_by_matches)
+    for company in reordered_companies:
+        matches = matched_students[company]
+        list.sort(students, key=(lambda s: s[company]), reverse=True)
+        while len(matches) < 5:
+#             # pdb.set_trace()
+
+            # you can't assign an unacceptable match
+            if student[company] == -1:
+                break
+            student = students.pop(0)
+            student[company] = 'A' + str(student[company])
+            matches.append(student)
+            all_matches.append(student)
+
+            for c2 in companies_ordered_by_matches:
+                if c2 != company:
+                    student[c2] = 'X' + str(student[c2])
+
     print("students who didn't match:", len(students))
     for company in matched_students:
         if len(matched_students[company]) < 5:
@@ -246,7 +271,12 @@ def build_teams(requirements, companies_ordered_by_matches, students):
     return all_matches + students
 
 # def write_out_students(student_profiles, headers):
-    
+
+def order_companies_by_student_scores(students, companies):
+    scores = assess_results(students, companies)
+    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
+    companies_ordered_by_matches = [x for (x,y) in sorted_scores]
+    return companies_ordered_by_matches
 
 if __name__ == '__main__':
     students = read_file('students.csv')
@@ -277,10 +307,13 @@ if __name__ == '__main__':
             match = student_company_match(student_profile, company_profile)
             # s_data[email][company_profile['name']] = match
             student_profile[company_profile['name']] = match
+        
+    # pdb.set_trace()
 
-    scores = assess_results(good_students, company_profiles)
-    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
-    companies_ordered_by_matches = [x for (x,y) in sorted_scores]
+    companies_ordered_by_matches = order_companies_by_student_scores(good_students, [c['name'] for c in company_profiles])
+    # scores = assess_results(good_students, company_profiles)
+    # sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
+    # companies_ordered_by_matches = [x for (x,y) in sorted_scores]
 
     requirements = get_requirements()
     students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
