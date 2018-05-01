@@ -153,10 +153,14 @@ def student_commitment(level):
     return level == 'Committed' or \
         level == 'Very Committed'
 
+def student_age_appropriate(year, cuny):
+    return (year != 'Senior') or ('Community College' in cuny)
+
 def student_ok(student_profile):
     return student_profile['Legal'] and \
         short_answers_ok(student_profile['short_answers']) and \
         student_profile['gender'] != 'Male' and \
+        student_age_appropriate(student_profile['class'], student_profile['cuny']) and \
         student_commitment(student_profile['commitment'])
 
 # TODO: add a reason to bad students...
