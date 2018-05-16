@@ -4,6 +4,7 @@ import os
 import pdb
 
 from enum import Enum
+from functools import reduce
 
 INTERESTS = ['Artificial Intelligence', 'Data Analytics', 'Design/Branding',
         'eCommerce', 'Ed Tech', 'Fin Tech', 'Fashion Tech', 'Health Tech',
@@ -135,11 +136,15 @@ def interests_match(student_interests, company_interests):
 def student_company_match(student_p, company_p):
     location_match = student_p['travel'] or (company_p['location'] == 'NYC')
     schedule_match = True
+    short_answers_quality = student_answers_quality(student_p['short_answers'])
     # schedule_match = (student_p['timeline'] == company_p['timeline'])
     size_match = (student_p['size'].lower() == company_p['size'].lower())
     if location_match and schedule_match:
         student_commitment = student_p['commitment'] == 'Very Committed'
-        return interests_match(student_p['interests'], company_p['interests']) + size_match + student_commitment
+        return interests_match(student_p['interests'], company_p['interests']) + \
+            size_match + \
+            student_commitment + \
+            short_answers_quality
     else:
         return -1
 
@@ -152,6 +157,10 @@ def short_answers_ok(answers):
 def student_commitment(level):
     return level == 'Committed' or \
         level == 'Very Committed'
+
+def student_answers_quality(short_answers):
+    return reduce((lambda x, y: x and y), 
+                    map((lambda s: s.count(' ') > 30), short_answers))
 
 def student_age_appropriate(year, cuny):
     return (year != 'Senior') or ('Community College' in cuny)
