@@ -14,7 +14,7 @@ INTERESTS = ['Artificial Intelligence', 'Data Analytics', 'Design/Branding',
 
 def read_file(filename):
     contents = []
-    with open(filename, 'r') as csvfile:
+    with open(filename, 'r', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             contents.append(row)
@@ -350,7 +350,7 @@ if __name__ == '__main__':
             s_dict[company] = student_profile[company]
 
     headers = h0 + companies_ordered_by_matches
-    with open('matches.csv', 'w', newline='') as csvfile:
+    with open('matches.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, headers)
         writer.writeheader()
         for student in students_final:
