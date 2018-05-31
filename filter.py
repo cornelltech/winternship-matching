@@ -248,7 +248,7 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                     if student not in matches:
 
                         # change their match score
-                        student[company] = 'M' + str(student[company])
+                        student[company] = 'TEAM ' + str(student[company])
 
                         # remove them from the blank students list
                         students.remove(student)
@@ -260,7 +260,7 @@ def build_teams(requirements, companies_ordered_by_matches, students):
                         # change their status for all other companies...
                         for c2 in companies_ordered_by_matches:
                             if c2 != company:
-                                student[c2] = 'A' + str(student[c2])
+                                student[c2] = 'matched elsewhere ' + str(student[c2])
 
 
                     # print(student['email'], 'matches', company, 'on', req, 'with score of', student[company])
@@ -279,15 +279,22 @@ def build_teams(requirements, companies_ordered_by_matches, students):
             if student[company] == -1:
                 break
 
-            student[company] = 'M' + str(student[company])
+            student[company] = 'TEAM ' + str(student[company])
             matches.append(student)
             all_matches.append(student)
 
             for c2 in companies_ordered_by_matches:
                 if c2 != company:
-                    student[c2] = 'B' + str(student[c2])
+                    student[c2] = 'matched elsewhere ' + str(student[c2])
 
     print("students who didn't match:", len(students))
+
+    for student in students:
+        for company in companies_ordered_by_matches:
+            if student[company] == -1:
+                student[company] = "can't match: " + str(student[company])
+            else:
+                student[company] = 'possible: ' + str(student[company])
     for company in matched_students:
         if len(matched_students[company]) < 5:
             print(company, 'has only', len(matched_students[company]), 'students matched')
