@@ -223,6 +223,8 @@ def get_requirements():
     requirements['non-CS freshman'] = lambda s: (s['class'] == 'Freshman' and \
                                                 s['major'] != 'Computer Science' and \
                                                 s['major'] != 'CS')
+    # requirements['personality']
+    # requirements['team role']
     return requirements
 
 def build_teams(requirements, companies_ordered_by_matches, students):
@@ -312,22 +314,25 @@ if __name__ == '__main__':
     students = read_file('students.csv')
     companies = read_file('companies.csv')
 
-    s_data = {student['Email']: student for student in students}
+    student_data = {student['Email']: student for student in students}
 
+    # structure data to be a little more maneuverable
     student_profiles = [get_student_profile(student) for student in students]
-    good_students, bad_students = separate_bad_students(student_profiles)
     company_profiles = [get_company_profile(company) for company in companies]
 
-    print (len(student_profiles))
-    print(len(good_students))
-    print(len(bad_students))
-    print (len(company_profiles))
+    # eliminate the students who we don't want to try to match with companies
+    good_students, bad_students = separate_bad_students(student_profiles)
+
+    # TODO: write bad students out to rejections csv
+
+    # TODO: figure out a better heuristic to print to cmdline
+    # print (len(student_profiles))
+    # print(len(good_students))
+    # print(len(bad_students))
+    # print (len(company_profiles))
 
     # create baseline list of headers
     h0 = list(students[0].keys()) + ['CS Level']
-    extra_keys = ['Phone', 'Legal', 'When', 'Travel', 'Computer', 'How did you hear']
-    for key in extra_keys:
-        h0.remove(key)
 
     for student_profile in good_students:
         email = student_profile['email']
@@ -344,12 +349,8 @@ if __name__ == '__main__':
 
     for student_profile in students_final:
         email = student_profile['email']
-        s_dict = s_data[email]
+        s_dict = student_data[email]
         s_dict['CS Level'] = student_profile['CS Level']
-
-        # remove some stuff that you don't need
-        for key in extra_keys:
-            del s_dict[key]
         
         # update the company scores
         for company_profile in company_profiles:
@@ -362,4 +363,11 @@ if __name__ == '__main__':
         writer.writeheader()
         for student in students_final:
             email = student['email']
-            writer.writerow(s_data[email])
+            writer.writerow(student_data[email])
+    
+    # with open('rejections.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    #     writer = csv.DictWriter(csvfile, h0)
+    #     writer.writeheader()
+    #     for student in bad_students:
+    #         email = student['email']
+    #         writer.writerow(student_data[email])
