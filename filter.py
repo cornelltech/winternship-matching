@@ -320,6 +320,12 @@ if __name__ == '__main__':
     student_profiles = [get_student_profile(student) for student in students]
     company_profiles = [get_company_profile(company) for company in companies]
 
+    # find CS Level for students
+    # (for file consistency, we're going to do this for all students)
+    for student_profile in student_profiles:
+        email = student_profile['email']
+        student_profile['CS Level'] = get_student_level(student_profile).name
+
     # eliminate the students who we don't want to try to match with companies
     good_students, bad_students = separate_bad_students(student_profiles)
 
@@ -335,13 +341,10 @@ if __name__ == '__main__':
     h0 = list(students[0].keys()) + ['CS Level']
 
     for student_profile in good_students:
-        email = student_profile['email']
-        student_profile['CS Level'] = get_student_level(student_profile).name
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
             student_profile[company_profile['name']] = match
         
-
     companies_ordered_by_matches = order_companies_by_student_scores(good_students, [c['name'] for c in company_profiles])
 
     requirements = get_requirements()
