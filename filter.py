@@ -182,6 +182,9 @@ def separate_bad_students(student_profiles):
             good.append(student_profile)
         else:
             bad.append(student_profile)
+    print ('all students', len(student_profiles))
+    print('possible', len(good))
+    print('rejected', len(bad))
     return good, bad
 
 def get_score(results):
@@ -315,50 +318,17 @@ def order_companies_by_student_scores(students, companies):
     companies_ordered_by_matches = [x for (x,y) in sorted_scores]
     return companies_ordered_by_matches
 
-if __name__ == '__main__':
-    students = read_file('students.csv')
-    companies = read_file('companies.csv')
-
-    student_data = {student['Email']: student for student in students}
-
-    # structure data to be a little more maneuverable
-    student_profiles = [get_student_profile(student) for student in students]
-    company_profiles = [get_company_profile(company) for company in companies]
-
-    # find CS Level for students
-    # (for file consistency, we're going to do this for all students)
+def calculate_student_cs_level(student_profiles):
     for student_profile in student_profiles:
-        email = student_profile['email']
         student_profile['CS Level'] = get_student_level(student_profile).name
 
-    # eliminate the students who we don't want to try to match with companies
-    good_students, bad_students = separate_bad_students(student_profiles)
-
-    # TODO: write bad students out to rejections csv
-
-    # TODO: figure out a better heuristic to print to cmdline
-    # print (len(student_profiles))
-    # print(len(good_students))
-    # print(len(bad_students))
-    # print (len(company_profiles))
-
-    # create baseline list of headers
-    h0 = list(students[0].keys()) + ['CS Level']
-
-    # assign match scores for each student x company combo
+def assign_match_scores(company_profiles, student_profiles, good_students):
     for student_profile in good_students:
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
             student_profile[company_profile['name']] = match
-        
-    # sort list of companies by how likely they are to find a match
-    companies_ordered_by_matches = order_companies_by_student_scores(good_students, \
-                                                        [c['name'] for c in company_profiles])
 
-    # use list of requirements to build teams that match them
-    requirements = get_team_requirements()
-    students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
-
+def update_student_data_with_assignments(student_data, company_profiles, students_final):
     for student_profile in students_final:
         email = student_profile['email']
         s_dict = student_data[email]
@@ -369,17 +339,50 @@ if __name__ == '__main__':
             company = company_profile['name']
             s_dict[company] = student_profile[company]
 
-    headers = h0 + companies_ordered_by_matches
-    with open('matches.csv', 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, headers)
+def write_to_file(filename, student_data, list_of_students, list_of_headers):
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, list_of_headers)
         writer.writeheader()
-        for student in students_final:
+        for student in list_of_students:
             email = student['email']
             writer.writerow(student_data[email])
-    
-    # with open('rejections.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    #     writer = csv.DictWriter(csvfile, h0)
-    #     writer.writeheader()
-    #     for student in bad_students:
-    #         email = student['email']
-    #         writer.writerow(student_data[email])
+
+if __name__ == '__main__':
+    students = read_file('students.csv')
+    companies = read_file('companies.csv')
+
+    student_data = {student['Email']: student for student in students}
+
+    # structure data to be a little more maneuverable
+    student_profiles = [get_student_profile(student) for student in students]
+    company_profiles = [get_company_profile(company) for company in companies]
+
+    # calculate CS Level for all students
+    calculate_student_cs_level(student_profiles)
+
+    # eliminate the students who we don't want to try to match with companies
+    good_students, bad_students = separate_bad_students(student_profiles)
+
+    # create baseline list of headers to write to file
+    headers = list(students[0].keys()) + ['CS Level']
+
+    # assign match scores for each student x company combo
+    assign_match_scores(company_profiles, student_profiles, good_students)
+        
+    # sort list of companies by how likely they are to find matched students
+    companies_ordered_by_matches = order_companies_by_student_scores(good_students, \
+                                                        [c['name'] for c in company_profiles])
+
+    # use list of requirements to build teams that match them
+    requirements = get_team_requirements()
+    students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
+
+    # write the team assignments to student data objects
+    update_student_data_with_assignments(student_data, company_profiles, students_final)
+
+    # write matched students (and possibles) to matches.csv file
+    matched_headers = headers + companies_ordered_by_matches
+    write_to_file('matches.csv', student_data, students_final, matched_headers)
+
+    # write rejected students to rejections.csv file
+    write_to_file('rejections.csv', student_data, bad_students, headers)
