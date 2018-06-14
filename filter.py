@@ -215,8 +215,8 @@ def assess_results(students, company_profiles):
 def get_team_requirements():
     requirements = {}
     requirements['outgoing'] = lambda s: s['personality'] == 'OUTGOING'
-    requirements['thoughtful'] = lambda s: s['personality'] == 'THOUGHTFUL'
-    requirements['analytical'] = lambda s: s['personality'] == 'ANALYTICAL'
+    # requirements['thoughtful'] = lambda s: s['personality'] == 'THOUGHTFUL'
+    # requirements['analytical'] = lambda s: s['personality'] == 'ANALYTICAL'
 
     requirements['sophomore'] = lambda s: (s['class'] != 'Freshman')
     requirements['advanced'] = lambda s: (s['CS Level'] == 'ADVANCED')
@@ -230,7 +230,6 @@ def get_team_requirements():
                                                 s['major'] != 'Computer Science' and \
                                                 s['major'] != 'CS')
 
-    # requirements['team role']
     return requirements
 
 def build_teams(requirements, companies_ordered_by_matches, students):
