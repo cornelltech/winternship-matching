@@ -111,6 +111,8 @@ def get_student_profile(student):
     profile['timeline'] = get_student_timeline(student)
     profile['commitment'] = student['Commitment']
     profile['cs'] = yesno_to_tf(student, 'CS Class')
+    profile['personality'] = student['Personality']
+    profile['team role'] = student['Team role']
 
     # short answers
     passionate = student['Passionate']
@@ -210,8 +212,12 @@ def assess_results(students, company_profiles):
         # score[company] = get_number_of_compatible_students(results)
     return score
 
-def get_requirements():
+def get_team_requirements():
     requirements = {}
+    requirements['outgoing'] = lambda s: s['personality'] == 'OUTGOING'
+    requirements['thoughtful'] = lambda s: s['personality'] == 'THOUGHTFUL'
+    requirements['analytical'] = lambda s: s['personality'] == 'ANALYTICAL'
+
     requirements['sophomore'] = lambda s: (s['class'] != 'Freshman')
     requirements['advanced'] = lambda s: (s['CS Level'] == 'ADVANCED')
     requirements['intermed'] = lambda s: (s['CS Level'] == 'INTERMEDIATE')
@@ -223,7 +229,7 @@ def get_requirements():
     requirements['non-CS freshman'] = lambda s: (s['class'] == 'Freshman' and \
                                                 s['major'] != 'Computer Science' and \
                                                 s['major'] != 'CS')
-    # requirements['personality']
+
     # requirements['team role']
     return requirements
 
@@ -340,14 +346,18 @@ if __name__ == '__main__':
     # create baseline list of headers
     h0 = list(students[0].keys()) + ['CS Level']
 
+    # assign match scores for each student x company combo
     for student_profile in good_students:
         for company_profile in company_profiles:
             match = student_company_match(student_profile, company_profile)
             student_profile[company_profile['name']] = match
         
-    companies_ordered_by_matches = order_companies_by_student_scores(good_students, [c['name'] for c in company_profiles])
+    # sort list of companies by how likely they are to find a match
+    companies_ordered_by_matches = order_companies_by_student_scores(good_students, \
+                                                        [c['name'] for c in company_profiles])
 
-    requirements = get_requirements()
+    # use list of requirements to build teams that match them
+    requirements = get_team_requirements()
     students_final = build_teams(requirements, companies_ordered_by_matches, good_students)
 
     for student_profile in students_final:
